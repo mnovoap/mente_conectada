@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>En la misma onda</title>
+<title>Mente conectada</title>
 <meta name="description" content="Juego por parejas: digan la misma palabra al mismo tiempo.">
 <meta name="theme-color" content="#dff3ef" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c1d28" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Misma onda">
+<meta name="apple-mobile-web-app-title" content="Mente conectada">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -261,7 +261,7 @@ select.input{appearance:auto}
 <section id="home" class="screen">
   <div class="hero">
     <div class="venn" aria-hidden="true"><span class="a"></span><span class="b"></span></div>
-    <h1 class="title">En la misma onda</h1>
+    <h1 class="title">Mente conectada</h1>
     <p class="tagline">Tira el dado, cuenten hasta tres y digan la misma palabra al mismo tiempo.</p>
   </div>
   <div class="stack">
@@ -898,7 +898,7 @@ function hit(){
   $('#venn').classList.add('merge');
   flash('var(--ok)'); vibrate([40, 40, 80]);
   [660, 880, 1320].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle'), i * 90));
-  $('#chainHint').textContent = `¡En la misma onda! +${game.log[game.log.length - 1].value}`;
+  $('#chainHint').textContent = `¡Mentes conectadas! +${game.log[game.log.length - 1].value}`;
   afterChain();
 }
 
@@ -1107,10 +1107,10 @@ async function exportWords(){
   const json = JSON.stringify({app:'misma-onda', version:1, exported:new Date().toISOString(),
     words: list.map(({word, category}) => ({word, category}))}, null, 2);
   const slug = filterCat ? '-' + norm(filterCat).replace(/[^a-z0-9]+/g, '-') : '';
-  const name = `misma-onda-palabras${slug}-${new Date().toISOString().slice(0, 10)}.json`;
+  const name = `mente-conectada-palabras${slug}-${new Date().toISOString().slice(0, 10)}.json`;
   let file = null; try { file = new File([json], name, {type:'application/json'}); } catch(e){}
   if (file && navigator.canShare && navigator.canShare({files:[file]})){
-    try { await navigator.share({files:[file], title:'Palabras de En la misma onda'}); return; }
+    try { await navigator.share({files:[file], title:'Palabras de Mente conectada'}); return; }
     catch(e){ if (e && e.name === 'AbortError') return; }
   }
   const url = URL.createObjectURL(file || new Blob([json], {type:'application/json'}));

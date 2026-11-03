@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>En la misma onda</title>
+<meta name="description" content="Juego por parejas: digan la misma palabra al mismo tiempo.">
+<meta name="theme-color" content="#dff3ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1d28" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Misma onda">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+/* ===================== COLORES (claro / oscuro) ===================== */
+:root{
+  --bg:#dff3ef; --surface:#ffffff; --surface-2:#eef9f6;
+  --ink:#0f2a3d; --muted:#46606f; --line:#0f2a3d; --soft-line:#c3e2dc; --hard:#0f2a3d;
+  --coral:#ff6b4a; --violet:#7b5cff; --blend:multiply;
+  --accent:#e4532f; --accent-ink:#ffffff;
+  --ok:#12925f; --bad:#e23d4b;
+  --primary:#0f2a3d; --primary-ink:#ffffff;
+  --overlay:rgba(15,42,61,.6);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1d28; --surface:#14303f; --surface-2:#1b3b4d;
+    --ink:#eaf7f4; --muted:#a3bcc6; --line:#5f93a6; --soft-line:#264a5c; --hard:#03090d;
+    --coral:#ff7a5c; --violet:#8f74ff; --blend:screen;
+    --accent:#ff6f4d; --accent-ink:#1a0703;
+    --ok:#22b377; --bad:#ff5560;
+    --primary:#eaf7f4; --primary-ink:#0c1d28;
+    --overlay:rgba(2,8,12,.72);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1d28; --surface:#14303f; --surface-2:#1b3b4d;
+  --ink:#eaf7f4; --muted:#a3bcc6; --line:#5f93a6; --soft-line:#264a5c; --hard:#03090d;
+  --coral:#ff7a5c; --violet:#8f74ff; --blend:screen;
+  --accent:#ff6f4d; --accent-ink:#1a0703;
+  --ok:#22b377; --bad:#ff5560;
+  --primary:#eaf7f4; --primary-ink:#0c1d28;
+  --overlay:rgba(2,8,12,.72);
+  color-scheme:dark;
+}
+
+/* ===================== BASE ===================== */
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;
+}
+main{height:100%}
+h1,h2,h3{margin:0;line-height:1.15}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+.screen{max-width:560px;margin:0 auto;padding:18px 18px 32px;min-height:100%}
+.screen[hidden],[hidden]{display:none!important}
+.center{text-align:center}
+.muted{color:var(--muted)}
+.hint{color:var(--muted);font-size:.92rem;margin:8px 0}
+.stack{display:grid;gap:12px}
+.stack-sm{display:grid;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.section-title{font-size:1.05rem;font-weight:800;margin:24px 0 10px}
+
+/* ----- El sello: dos círculos que se juntan ----- */
+.venn{--s:200px;position:relative;width:var(--s);height:calc(var(--s) * .62);margin:0 auto}
+.venn span{position:absolute;top:0;width:calc(var(--s) * .62);height:calc(var(--s) * .62);border-radius:50%;mix-blend-mode:var(--blend);transition:transform .45s cubic-bezier(.3,1.6,.5,1)}
+.venn .a{left:0;background:var(--coral)}
+.venn .b{right:0;background:var(--violet)}
+.venn.merge .a{transform:translateX(calc(var(--s) * .19))}
+.venn.merge .b{transform:translateX(calc(var(--s) * -.19))}
+.venn.small{--s:76px}
+.hero .venn .a{animation:inA .9s cubic-bezier(.3,1.4,.5,1) both}
+.hero .venn .b{animation:inB .9s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes inA{from{transform:translateX(-60px)}}
+@keyframes inB{from{transform:translateX(60px)}}
+
+/* ===================== BOTONES ===================== */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:54px;padding:10px 16px;border-radius:999px;
+  border:2.5px solid var(--line);background:var(--surface);color:var(--ink);
+  font-weight:800;font-size:1.05rem;cursor:pointer;
+  box-shadow:0 4px 0 var(--hard);transition:transform .06s,box-shadow .06s;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--hard)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.accent{background:var(--accent);color:var(--accent-ink);border-color:var(--hard)}
+.btn.primary{background:var(--primary);color:var(--primary-ink);border-color:var(--hard)}
+.btn.danger{background:var(--surface);color:var(--bad);border-color:var(--bad);box-shadow:0 4px 0 var(--bad)}
+.btn.small{min-height:44px;font-size:.95rem}
+.btn.big{min-height:62px;font-size:1.2rem}
+.btn.huge{min-height:84px;font-size:1.5rem}
+.btn.auto{width:auto}
+.badge{background:var(--violet);color:#fff;border-radius:99px;padding:1px 9px;font-size:.85rem}
+.icon-btn{
+  width:46px;height:46px;flex:none;border-radius:50%;border:2.5px solid var(--line);
+  background:var(--surface);color:var(--ink);font-weight:900;font-size:1.05rem;cursor:pointer;
+  box-shadow:0 3px 0 var(--hard);touch-action:manipulation;
+}
+.icon-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--hard)}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.topbar h2{font-size:1.45rem;font-weight:900;flex:1}
+.back{font-size:1.6rem;line-height:1}
+
+/* ===================== INICIO ===================== */
+.hero{display:flex;flex-direction:column;align-items:center;padding:34px 0 26px;text-align:center}
+.title{font-size:clamp(2.3rem,11vw,3.2rem);font-weight:900;letter-spacing:-.03em;margin-top:22px;line-height:1}
+.tagline{max-width:21em;font-size:1.08rem;margin:14px 0 0;font-weight:600;color:var(--muted)}
+
+/* ===================== CONFIGURACIÓN ===================== */
+.panel{background:var(--surface);border:2.5px solid var(--line);border-radius:22px;padding:2px 16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1.5px solid var(--soft-line)}
+.row:last-child{border-bottom:0}
+.row small{display:block;color:var(--muted);font-weight:500}
+.stepper{display:flex;align-items:center;gap:6px;flex:none}
+.stepper .icon-btn{width:40px;height:40px;font-size:1.2rem}
+.stepper output{min-width:70px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+.team-block{background:var(--surface);border:2.5px solid var(--line);border-radius:22px;padding:12px;display:grid;gap:8px}
+.team-row{display:flex;align-items:center;gap:10px}
+.team-dot{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid var(--hard);background:var(--c,#999)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:8px 14px;font-weight:700;font-size:.95rem;cursor:pointer;touch-action:manipulation}
+.chip.on{background:var(--primary);color:var(--primary-ink);border-color:var(--hard)}
+.chip span{opacity:.7;font-weight:600}
+.sticky-cta{position:sticky;bottom:0;padding:14px 0 6px;background:linear-gradient(transparent,var(--bg) 30%)}
+.switch{appearance:none;-webkit-appearance:none;width:54px;height:32px;border-radius:99px;background:var(--soft-line);border:2px solid var(--line);position:relative;cursor:pointer;flex:none;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface);border:2px solid var(--line);transition:transform .15s}
+.switch:checked{background:var(--ok)}
+.switch:checked::after{transform:translateX(22px)}
+.value-table{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.value-table div{background:var(--surface);border:2px solid var(--soft-line);border-radius:16px;padding:8px;text-align:center;font-size:.85rem;color:var(--muted);font-weight:600}
+.value-table strong{display:block;font-size:1.25rem;color:var(--ink)}
+
+/* ===================== FORMULARIOS ===================== */
+.input{
+  width:100%;min-height:50px;padding:10px 16px;border-radius:16px;border:2px solid var(--line);
+  background:var(--surface);color:var(--ink);font:inherit;font-size:16px;font-weight:600;
+}
+.input::placeholder{color:var(--muted);font-weight:500}
+select.input{appearance:auto}
+.field{display:grid;gap:6px;margin-bottom:16px}
+.field > span{font-weight:800}
+
+/* ===================== TURNO / MARCADOR ===================== */
+.ready-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding-top:24px}
+.round-label{font-weight:800;color:var(--muted);margin:0}
+.team-big{font-size:clamp(2.2rem,10vw,3.1rem);font-weight:900;letter-spacing:-.02em;word-break:break-word;
+  text-decoration:underline;text-decoration-color:var(--c,transparent);text-decoration-thickness:.14em;text-underline-offset:.16em}
+.players-big{font-size:1.3rem;font-weight:800;margin:0}
+.scores{display:grid;gap:8px;width:100%}
+.score-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px 10px;padding:12px 14px;background:var(--surface);border:2px solid var(--soft-line);border-radius:18px;text-align:left}
+.score-row.active{border-color:var(--line);box-shadow:0 3px 0 var(--hard)}
+.score-row .sname{font-weight:700;word-break:break-word}
+.score-row .spts{font-weight:900;font-size:1.3rem;font-variant-numeric:tabular-nums}
+.score-row .prog{grid-column:1 / -1;height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.score-row .prog i{display:block;height:100%;background:var(--c);border-radius:99px}
+
+/* ===================== PANTALLA DE JUEGO ===================== */
+.play{display:flex;flex-direction:column;gap:12px;height:100%;padding-bottom:16px}
+.play-top{display:flex;align-items:center;gap:10px}
+.play-team{flex:1;display:flex;align-items:center;gap:8px;font-weight:800;min-width:0}
+.play-team > span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.play-role{font-size:.85rem;color:var(--muted);font-weight:700}
+.timer{font-size:2.5rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.timer.low{color:var(--bad);animation:pulse 1s infinite}
+.timer.tb{font-size:1.2rem;color:var(--violet)}
+@keyframes pulse{50%{transform:scale(1.08)}}
+.bar{height:12px;border-radius:99px;background:var(--surface);border:2px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--ink);transition:width .2s linear}
+.bar.low i{background:var(--bad)}
+.turn-stats{display:flex;justify-content:center;gap:16px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--muted)}
+.turn-stats strong{color:var(--ink)}
+.chain-area{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.chain{width:100%;max-width:400px;background:var(--surface);border:3px solid var(--line);border-radius:28px;box-shadow:0 7px 0 var(--hard);overflow:hidden}
+.chain-top{display:flex;align-items:center;gap:16px;padding:16px 18px;background:var(--surface-2);border-bottom:2px solid var(--soft-line)}
+.die{width:84px;height:84px;flex:none;background:#fff;border:3px solid var(--hard);border-radius:20px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:10px;box-shadow:0 4px 0 var(--hard)}
+.die i{width:14px;height:14px;border-radius:50%;place-self:center;background:transparent}
+.die i.on{background:#0f2a3d}
+.die.rolling{animation:shake .12s infinite}
+@keyframes shake{0%{transform:rotate(-12deg)}50%{transform:rotate(10deg) translateY(-4px)}100%{transform:rotate(-12deg)}}
+.chain-info{min-width:0}
+.tries{font-size:1.4rem;font-weight:900;line-height:1.1}
+.value{font-weight:800;color:var(--accent)}
+.dots{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.dots i{width:16px;height:16px;border-radius:50%;background:var(--violet);border:2px solid var(--hard)}
+.dots i.used{background:transparent;border-color:var(--soft-line)}
+.chain-body{padding:16px 18px 20px;text-align:center}
+.chain-label{font-size:.9rem;font-weight:700;color:var(--muted)}
+.chain-word{font-size:clamp(2.1rem,10vw,3rem);font-weight:900;letter-spacing:-.02em;line-height:1.05;margin:4px 0 14px;word-break:break-word}
+.chain-hint{margin:12px 0 0;font-weight:600;color:var(--muted);min-height:2.9em}
+.play-actions{min-height:92px;display:flex;align-items:stretch}
+.judge{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.act{min-height:84px;font-size:1.05rem;line-height:1.15;border-radius:24px;border-color:var(--hard)}
+.act.ok{background:var(--ok);color:#fff}
+.act.bad{background:var(--bad);color:#fff}
+.banner{background:var(--bad);color:#fff;font-weight:800;text-align:center;border-radius:16px;padding:10px}
+.countdown{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--overlay);pointer-events:none}
+.countdown span{font-size:min(42vw,220px);font-weight:900;color:#fff;line-height:1;animation:pop .6s ease-out}
+.countdown span.go{color:var(--coral);font-size:min(26vw,140px)}
+@keyframes pop{from{transform:scale(.4);opacity:0}60%{transform:scale(1.08);opacity:1}to{transform:scale(1)}}
+.flash{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:5}
+.flash.go{animation:flash .4s ease-out}
+@keyframes flash{from{opacity:.3}to{opacity:0}}
+
+/* ===================== FIN DE TURNO ===================== */
+.points-big{font-size:3.6rem;font-weight:900;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+.log{display:grid;gap:8px}
+.log-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:18px;border:2px solid var(--soft-line);background:var(--surface);cursor:pointer;text-align:left;touch-action:manipulation}
+.log-ico{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;flex:none;background:var(--muted)}
+.log-word{flex:1;font-weight:700;word-break:break-word}
+.log-word small{display:block;color:var(--muted);font-weight:600}
+.log-res{font-size:.85rem;font-weight:800;color:var(--muted)}
+.log-item.ok .log-ico{background:var(--ok)} .log-item.ok .log-res{color:var(--ok)}
+.log-item.lost .log-ico{background:var(--bad)} .log-item.lost .log-res{color:var(--bad)}
+
+/* ===================== MIS PALABRAS ===================== */
+.filters{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+.word-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:var(--surface);border:2px solid var(--soft-line);border-radius:16px;padding:12px 16px;margin-bottom:8px;cursor:pointer}
+.word-item strong{font-size:1.08rem;word-break:break-word}
+.word-item span{font-size:.8rem;font-weight:700;color:var(--muted);flex:none}
+.empty{text-align:center;padding:30px 10px;color:var(--muted)}
+.help p{margin:0 0 12px}
+.help h3{font-size:1.1rem;margin:20px 0 8px}
+
+/* ===================== MODALES ===================== */
+.modal{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;padding:24px;z-index:40}
+.modal.top{z-index:60}
+.modal-box{background:var(--surface);border:3px solid var(--line);border-radius:26px;box-shadow:0 7px 0 var(--hard);padding:22px;width:100%;max-width:380px;display:grid;gap:10px}
+.modal-box h3{font-size:1.4rem;font-weight:900;text-align:center}
+.modal-box p{margin:0 0 6px;text-align:center;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--primary);color:var(--primary-ink);padding:12px 18px;border-radius:16px;font-weight:700;z-index:80;max-width:calc(100% - 32px);text-align:center;box-shadow:0 4px 0 var(--hard)}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media (max-height:660px){
+  .chain-word{font-size:2rem;margin-bottom:8px}
+  .venn.small{--s:56px}
+  .act,.btn.huge{min-height:70px}
+  .timer{font-size:2.1rem}
+}
+</style>
+</head>
+<body>
+<main>
+
+<!-- ========== INICIO ========== -->
+<section id="home" class="screen">
+  <div class="hero">
+    <div class="venn" aria-hidden="true"><span class="a"></span><span class="b"></span></div>
+    <h1 class="title">En la misma onda</h1>
+    <p class="tagline">Tira el dado, cuenten hasta tres y digan la misma palabra al mismo tiempo.</p>
+  </div>
+  <div class="stack">
+    <button class="btn accent big" data-action="goSetup">Jugar</button>
+    <button class="btn" data-action="goWords">Mis palabras <span class="badge" id="homeCount">0</span></button>
+    <button class="btn" data-action="goHelp">Cómo se juega</button>
+    <button class="btn primary" id="installBtn" data-action="install" hidden>Instalar en este celular</button>
+  </div>
+  <p class="hint center" id="installHint" hidden></p>
+</section>
+
+<!-- ========== CONFIGURAR PARTIDA ========== -->
+<section id="setup" class="screen" hidden>
+  <header class="topbar">
+    <button class="icon-btn back" data-action="goHome" aria-label="Volver">‹</button>
+    <h2>Nueva partida</h2>
+  </header>
+  <h3 class="section-title">Parejas</h3>
+  <div id="pairs" class="stack"></div>
+  <div style="margin-top:12px"><button class="btn small" id="addPairBtn" data-action="addPair">Añadir pareja</button></div>
+
+  <h3 class="section-title">Reglas</h3>
+  <div class="panel">
+    <div class="row">
+      <div><strong>Tiempo por turno</strong></div>
+      <div class="stepper">
+        <button class="icon-btn" data-action="step" data-field="seconds" data-d="-15" aria-label="Menos tiempo">−</button>
+        <output id="v-seconds"></output>
+        <button class="icon-btn" data-action="step" data-field="seconds" data-d="15" aria-label="Más tiempo">+</button>
+      </div>
+    </div>
+    <div class="row">
+      <div><strong>Puntos para ganar</strong></div>
+      <div class="stepper">
+        <button class="icon-btn" data-action="step" data-field="target" data-d="-1" aria-label="Menos puntos">−</button>
+        <output id="v-target"></output>
+        <button class="icon-btn" data-action="step" data-field="target" data-d="1" aria-label="Más puntos">+</button>
+      </div>
+    </div>
+    <label class="row">
+      <div><strong>Sonido</strong><small>En iPhone, se apaga con el modo silencio</small></div>
+      <input type="checkbox" class="switch" id="soundToggle">
+    </label>
+  </div>
+  <div class="value-table" aria-label="Puntos según el dado">
+    <div><strong>1 o 2</strong>intentos: 3 puntos</div>
+    <div><strong>3 o 4</strong>intentos: 2 puntos</div>
+    <div><strong>5 o 6</strong>intentos: 1 punto</div>
+  </div>
+
+  <h3 class="section-title">Categorías de palabras <span class="muted" id="poolInfo" style="font-weight:600"></span></h3>
+  <div id="catChips" class="chips"></div>
+  <div class="sticky-cta"><button class="btn accent big" data-action="startGame">Empezar partida</button></div>
+</section>
+
+<!-- ========== ANTES DE CADA TURNO ========== -->
+<section id="ready" class="screen" hidden>
+  <div class="ready-wrap">
+    <p class="round-label" id="roundLabel"></p>
+    <p class="muted" style="margin:0">Le toca a</p>
+    <h1 class="team-big" id="readyTeam"></h1>
+    <p class="players-big" id="readyPlayers"></p>
+    <p class="muted" style="max-width:24em" id="readyTip"></p>
+    <button class="btn accent big" data-action="startTurn">Empezar turno</button>
+    <h3 class="section-title" style="align-self:flex-start" id="targetInfo"></h3>
+    <div id="readyScores" class="scores"></div>
+    <button class="btn small" data-action="quitGame" style="margin-top:8px">Abandonar partida</button>
+  </div>
+</section>
+
+<!-- ========== JUGANDO ========== -->
+<section id="play" class="screen play" hidden>
+  <div class="play-top">
+    <div class="play-team"><span class="team-dot" id="playDot"></span><span><span id="playTeam"></span><br><span class="play-role" id="playPlayers"></span></span></div>
+    <div class="timer" id="timer">2:00</div>
+    <button class="icon-btn" data-action="pause" aria-label="Pausar">II</button>
+  </div>
+  <div class="bar" id="timerBarWrap"><i id="timerBar"></i></div>
+  <div class="turn-stats" id="turnStats"></div>
+  <div class="chain-area">
+    <div class="chain">
+      <div class="chain-top">
+        <div class="die" id="die" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="chain-info">
+          <div class="tries" id="triesText"></div>
+          <div class="value" id="valueText"></div>
+          <div class="dots" id="dots"></div>
+        </div>
+      </div>
+      <div class="chain-body">
+        <span class="chain-label" id="chainLabel">Palabra de inicio</span>
+        <div class="chain-word" id="chainWord"></div>
+        <div class="venn small" id="venn" aria-hidden="true"><span class="a"></span><span class="b"></span></div>
+        <p class="chain-hint" id="chainHint"></p>
+      </div>
+    </div>
+  </div>
+  <div class="banner" id="timeBanner" hidden>¡Se acabó el tiempo! Este es el último intento.</div>
+  <div class="play-actions">
+    <button class="btn accent huge" id="goBtn" data-action="countdown">3, 2, 1… ¡ya!</button>
+    <div class="judge" id="judge" hidden>
+      <button class="btn act bad" data-action="miss">✗ No coincidimos</button>
+      <button class="btn act ok" data-action="hit">✓ ¡Coincidimos!</button>
+    </div>
+  </div>
+  <div class="countdown" id="countdown" hidden><span id="cdNum">3</span></div>
+  <div class="flash" id="flash"></div>
+</section>
+
+<!-- ========== FIN DE TURNO ========== -->
+<section id="turnEnd" class="screen" hidden>
+  <p class="round-label center" id="teTitle" style="margin-top:16px"></p>
+  <h2 class="center team-big" id="teTeam" style="font-size:2rem"></h2>
+  <div class="points-big" id="tePoints"></div>
+  <p class="hint center">¿Alguien se equivocó de botón? Toca una cadena para cambiar su resultado.</p>
+  <div id="teLog" class="log"></div>
+  <div class="sticky-cta"><button class="btn accent big" data-action="confirmTurn" id="teBtn">Sumar y continuar</button></div>
+</section>
+
+<!-- ========== FIN DE PARTIDA ========== -->
+<section id="final" class="screen" hidden>
+  <div class="ready-wrap">
+    <div class="venn merge" aria-hidden="true" style="--s:150px"><span class="a"></span><span class="b"></span></div>
+    <p class="round-label">Fin de la partida</p>
+    <h1 class="team-big" id="winner"></h1>
+    <p class="players-big" id="winnerPlayers"></p>
+    <p class="hint" id="finalNote"></p>
+    <div id="finalScores" class="scores"></div>
+    <div class="stack" style="width:100%;margin-top:10px">
+      <button class="btn accent big" data-action="rematch">Revancha</button>
+      <button class="btn" data-action="goHome">Ir al inicio</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== MIS PALABRAS ========== -->
+<section id="words" class="screen" hidden>
+  <header class="topbar">
+    <button class="icon-btn back" data-action="goHome" aria-label="Volver">‹</button>
+    <h2>Mis palabras</h2>
+    <button class="btn primary small auto" data-action="newWord">Nueva</button>
+  </header>
+  <div class="filters">
+    <input type="search" class="input" id="search" placeholder="Buscar" autocomplete="off" aria-label="Buscar palabras">
+    <select class="input" id="catFilter" aria-label="Filtrar por categoría"></select>
+  </div>
+  <p class="hint" id="wordsCount"></p>
+  <div id="wordList"></div>
+
+  <h3 class="section-title">Compartir y copia de seguridad</h3>
+  <div class="grid2">
+    <button class="btn small" data-action="exportWords">Exportar</button>
+    <button class="btn small" data-action="importWords">Importar</button>
+  </div>
+  <p class="hint">También puedes importar el archivo que exporta la app de Tabú: se usan sus palabras principales.</p>
+  <div class="stack-sm">
+    <button class="btn small" data-action="fromTabu" id="fromTabuBtn" hidden>Traer las palabras de mi Tabú</button>
+    <button class="btn small" data-action="restoreExamples">Recuperar palabras de ejemplo</button>
+  </div>
+  <input type="file" id="importFile" hidden>
+</section>
+
+<!-- ========== EDITAR PALABRA ========== -->
+<section id="edit" class="screen" hidden>
+  <header class="topbar">
+    <button class="icon-btn back" data-action="goWords" aria-label="Volver">‹</button>
+    <h2 id="editTitle">Nueva palabra</h2>
+  </header>
+  <label class="field"><span>Palabra de inicio</span>
+    <input class="input" id="fWord" maxlength="60" autocomplete="off" placeholder="Ej.: Volcán">
+  </label>
+  <label class="field"><span>Categoría</span>
+    <input class="input" id="fCat" list="catList" maxlength="30" autocomplete="off" placeholder="Ej.: Naturaleza">
+  </label>
+  <datalist id="catList"></datalist>
+  <div class="stack">
+    <button class="btn accent big" data-action="saveWord">Guardar palabra</button>
+    <button class="btn danger" data-action="deleteWord" id="deleteBtn">Eliminar palabra</button>
+  </div>
+</section>
+
+<!-- ========== CÓMO SE JUEGA ========== -->
+<section id="help" class="screen help" hidden>
+  <header class="topbar">
+    <button class="icon-btn back" data-action="goHome" aria-label="Volver">‹</button>
+    <h2>Cómo se juega</h2>
+  </header>
+  <p>Se juega por parejas (de 2 a 6 parejas). Cada pareja tiene turnos de 2 minutos. El objetivo es que los dos digan la misma palabra al mismo tiempo.</p>
+  <h3>Una cadena</h3>
+  <p>La app tira el dado: el número indica cuántos intentos tienen. Menos intentos valen más: con 1 o 2 se ganan 3 puntos, con 3 o 4 se ganan 2 y con 5 o 6 se gana 1.</p>
+  <p>Luego aparece una palabra de inicio, por ejemplo “Playa”. Pulsen “3, 2, 1… ¡ya!” y, al oír “¡ya!”, digan los dos al mismo tiempo una palabra relacionada (sin decir la palabra de inicio).</p>
+  <p>Si coinciden, ganan los puntos y empieza una cadena nueva. Si no, gastan un intento y ahora deben buscar una palabra que conecte las dos que acaban de decir: si dijeron “arena” y “sol”, quizá los dos piensen en “verano”. Si se acaban los intentos, la cadena se pierde.</p>
+  <h3>Reglas para no discutir</h3>
+  <p>No se repiten palabras dentro de una cadena. Singular y plural cuentan como iguales, pero los sinónimos no. La otra pareja hace de juez y confirma si de verdad coincidieron.</p>
+  <h3>Fin del turno y de la partida</h3>
+  <p>Si el tiempo se acaba durante la cuenta regresiva o mientras el juez decide, ese último intento sí cuenta. Cuando una pareja llega a 10 puntos, se termina la ronda para que todas jueguen los mismos turnos, y gana la de más puntos. Si hay empate, cada pareja empatada juega una cadena extra.</p>
+</section>
+
+</main>
+
+<div class="modal" id="pauseModal" hidden>
+  <div class="modal-box">
+    <h3>Pausa</h3>
+    <p id="pauseTime"></p>
+    <button class="btn accent big" data-action="resume">Continuar</button>
+    <button class="btn" data-action="endTurnNow">Terminar el turno ahora</button>
+    <button class="btn danger" data-action="quitGame">Abandonar partida</button>
+  </div>
+</div>
+
+<div class="modal top" id="dialog" hidden role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <p id="dialogMsg"></p>
+    <div class="stack-sm" id="dialogBtns"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+'use strict';
+
+/* ==========================================================
+   1. PALABRAS DE INICIO DE EJEMPLO (las mismas 100 de Tabú)
+   ========================================================== */
+const W = (word, category) => ({word, category});
+const EXAMPLES = [
+  W('Playa', 'Lugares'),
+  W('Hospital', 'Lugares'),
+  W('Biblioteca', 'Lugares'),
+  W('Aeropuerto', 'Lugares'),
+  W('Pizza', 'Comida'),
+  W('Chocolate', 'Comida'),
+  W('Tacos', 'Comida'),
+  W('Paella', 'Comida'),
+  W('Elefante', 'Animales'),
+  W('Pingüino', 'Animales'),
+  W('Jirafa', 'Animales'),
+  W('Murciélago', 'Animales'),
+  W('Paraguas', 'Objetos'),
+  W('Reloj', 'Objetos'),
+  W('Espejo', 'Objetos'),
+  W('Bombero', 'Profesiones'),
+  W('Astronauta', 'Profesiones'),
+  W('Fútbol', 'Deportes'),
+  W('Natación', 'Deportes'),
+  W('Cumpleaños', 'Celebraciones'),
+  W('Finca', 'Paisa'),
+  W('Paseo', 'Paisa'),
+  W('Arepa', 'Paisa'),
+  W('Bandeja paisa', 'Paisa'),
+  W('Parcero', 'Paisa'),
+  W('Carriel', 'Paisa'),
+  W('Chiva', 'Paisa'),
+  W('Guaro', 'Paisa'),
+  W('Feria de las Flores', 'Paisa'),
+  W('Tinto', 'Paisa'),
+  W('Mazamorra', 'Paisa'),
+  W('Guatapé', 'Paisa'),
+  W('Sancocho', 'Paisa'),
+  W('Natilla', 'Paisa'),
+  W('Aguapanela', 'Paisa'),
+  W('Guayabo', 'Paisa'),
+  W('Mecato', 'Paisa'),
+  W('Chiviado', 'Paisa'),
+  W('Pecueca', 'Paisa'),
+  W('Berraco', 'Paisa'),
+  W('Perro', 'Animales'),
+  W('Gato', 'Animales'),
+  W('León', 'Animales'),
+  W('Tiburón', 'Animales'),
+  W('Delfín', 'Animales'),
+  W('Mono', 'Animales'),
+  W('Serpiente', 'Animales'),
+  W('Tortuga', 'Animales'),
+  W('Abeja', 'Animales'),
+  W('Mariposa', 'Animales'),
+  W('Caballo', 'Animales'),
+  W('Chigüiro', 'Animales'),
+  W('Guacamaya', 'Animales'),
+  W('Cóndor', 'Animales'),
+  W('Perezoso', 'Animales'),
+  W('Hormiga', 'Animales'),
+  W('Cartagena', 'Colombia'),
+  W('Bogotá', 'Colombia'),
+  W('Medellín', 'Colombia'),
+  W('Cali', 'Colombia'),
+  W('Barranquilla', 'Colombia'),
+  W('Santa Marta', 'Colombia'),
+  W('San Andrés', 'Colombia'),
+  W('Caño Cristales', 'Colombia'),
+  W('Desierto de la Tatacoa', 'Colombia'),
+  W('Parque Tayrona', 'Colombia'),
+  W('Valle de Cocora', 'Colombia'),
+  W('Amazonas', 'Colombia'),
+  W('La Guajira', 'Colombia'),
+  W('Villa de Leyva', 'Colombia'),
+  W('Catedral de Sal', 'Colombia'),
+  W('Monserrate', 'Colombia'),
+  W('Ciudad Perdida', 'Colombia'),
+  W('Eje Cafetero', 'Colombia'),
+  W('Los Llanos', 'Colombia'),
+  W('Nevado del Ruiz', 'Colombia'),
+  W('Ajiaco', 'Comida'),
+  W('Empanada', 'Comida'),
+  W('Helado', 'Comida'),
+  W('Hamburguesa', 'Comida'),
+  W('Celular', 'Objetos'),
+  W('Guitarra', 'Objetos'),
+  W('Sombrero vueltiao', 'Objetos'),
+  W('Hamaca', 'Objetos'),
+  W('Llaves', 'Objetos'),
+  W('Médico', 'Profesiones'),
+  W('Profesor', 'Profesiones'),
+  W('Policía', 'Profesiones'),
+  W('Cocinero', 'Profesiones'),
+  W('Peluquero', 'Profesiones'),
+  W('Ciclismo', 'Deportes'),
+  W('Tenis', 'Deportes'),
+  W('Baloncesto', 'Deportes'),
+  W('Boxeo', 'Deportes'),
+  W('Navidad', 'Celebraciones'),
+  W('Halloween', 'Celebraciones'),
+  W('Boda', 'Celebraciones'),
+  W('Cine', 'Lugares'),
+  W('Supermercado', 'Lugares'),
+  W('Parque de diversiones', 'Lugares'),
+];
+
+const KEYS = {words:'onda.words.v1', settings:'onda.settings.v1', tabu:'tabu.cards.v1'};
+const TEAM_COLORS = ['#e4532f','#6c4cf5','#12925f','#1f6fd6','#d1337a','#c98a06'];
+const LIMITS = {seconds:[60,300], target:[5,30]};
+const FACES = {1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8]};
+const pointsFor = n => n <= 2 ? 3 : n <= 4 ? 2 : 1;
+
+/* ==========================================================
+   2. UTILIDADES
+   ========================================================== */
+const $ = (sel, el = document) => el.querySelector(sel);
+const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const norm = s => String(s).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const keyOf = w => norm(w.word);
+const fmtTime = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const plural = (n, one, many) => n === 1 ? one : many;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const store = {
+  get(k, fallback){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch(e){ return fallback; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+};
+function sanitizeWord(w, keepId){
+  if (typeof w === 'string') w = {word:w};
+  if (!w || typeof w.word !== 'string') return null;
+  const word = w.word.trim().slice(0, 60);
+  if (!word) return null;
+  const category = (typeof w.category === 'string' && w.category.trim()) ? w.category.trim().slice(0, 30) : 'General';
+  return {id: (keepId && w.id) ? String(w.id) : uid(), word, category};
+}
+
+/* ==========================================================
+   3. ESTADO
+   ========================================================== */
+let words = store.get(KEYS.words, null);
+if (!Array.isArray(words)){ words = EXAMPLES.map(w => sanitizeWord(w)); store.set(KEYS.words, words); }
+else words = words.map(w => sanitizeWord(w, true)).filter(Boolean);
+
+const DEFAULTS = {
+  pairs:[{name:'Pareja 1', p1:'', p2:''}, {name:'Pareja 2', p1:'', p2:''}],
+  seconds:120, target:10, sound:true, excludedCats:[]
+};
+let settings = Object.assign({}, DEFAULTS, store.get(KEYS.settings, {}));
+if (!Array.isArray(settings.pairs) || settings.pairs.length < 2) settings.pairs = JSON.parse(JSON.stringify(DEFAULTS.pairs));
+if (!Array.isArray(settings.excludedCats)) settings.excludedCats = [];
+
+let game = null, current = 'home', editingId = null, filterCat = '', search = '';
+function saveWords(){ if (!store.set(KEYS.words, words)) toast('No se pudo guardar. Revisa el espacio del dispositivo.'); }
+function saveSettings(){ store.set(KEYS.settings, settings); }
+function categoryCounts(){
+  const m = new Map();
+  words.forEach(w => m.set(w.category, (m.get(w.category) || 0) + 1));
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
+}
+
+/* ==========================================================
+   4. NAVEGACIÓN, AVISOS Y DIÁLOGOS
+   ========================================================== */
+function show(id){
+  $$('.screen').forEach(s => s.hidden = (s.id !== id));
+  current = id; window.scrollTo(0, 0);
+  if (id !== 'home') ensureGuard();
+}
+let guard = false;
+function ensureGuard(){ if (!guard){ try { history.pushState({onda:1}, ''); guard = true; } catch(e){} } }
+window.addEventListener('popstate', () => {
+  guard = false;
+  if (!$('#dialog').hidden){ ensureGuard(); return; }
+  switch (current){
+    case 'play': actions.pause(); break;
+    case 'edit': actions.goWords(); break;
+    case 'ready': case 'turnEnd': actions.quitGame(); break;
+    case 'home': break;
+    default: actions.goHome();
+  }
+  if (current !== 'home') ensureGuard();
+});
+let toastTimer = null;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600);
+}
+function ask(message, buttons){
+  return new Promise(resolve => {
+    const box = $('#dialogBtns');
+    $('#dialogMsg').textContent = message; box.innerHTML = '';
+    buttons.forEach(b => {
+      const el = document.createElement('button');
+      el.className = 'btn ' + (b.style || ''); el.textContent = b.label;
+      el.addEventListener('click', () => { $('#dialog').hidden = true; resolve(b.value); });
+      box.appendChild(el);
+    });
+    $('#dialog').hidden = false;
+  });
+}
+
+/* ==========================================================
+   5. SONIDO, VIBRACIÓN Y PANTALLA ENCENDIDA
+   ========================================================== */
+let actx = null;
+function unlockAudio(){
+  if (!settings.sound) return;
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch(e){}
+}
+function beep(freq = 880, dur = 0.12, type = 'sine', vol = 0.25){
+  if (!settings.sound || !actx) return;
+  try {
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur);
+  } catch(e){}
+}
+const vibrate = p => { try { if (navigator.vibrate) navigator.vibrate(p); } catch(e){} };
+let wakeLock = null;
+async function keepAwake(){ try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
+function releaseAwake(){ try { if (wakeLock) wakeLock.release(); } catch(e){} wakeLock = null; }
+
+/* ==========================================================
+   6. TEMPORIZADOR
+   ========================================================== */
+const timer = {endAt:0, remaining:0, running:false, interval:null, lastSec:null};
+function startTimer(sec){ timer.remaining = sec * 1000; timer.lastSec = null; resumeTimer(); }
+function resumeTimer(){
+  timer.endAt = Date.now() + timer.remaining; timer.running = true;
+  clearInterval(timer.interval); timer.interval = setInterval(tick, 200); tick();
+}
+function pauseTimer(){
+  if (!timer.running) return;
+  timer.remaining = Math.max(0, timer.endAt - Date.now()); timer.running = false; clearInterval(timer.interval);
+}
+function stopTimer(){ timer.running = false; clearInterval(timer.interval); }
+function tick(){
+  if (!timer.running || !game) return;
+  const ms = Math.max(0, timer.endAt - Date.now());
+  const s = Math.ceil(ms / 1000), low = s <= 10;
+  $('#timer').textContent = fmtTime(s);
+  $('#timer').classList.toggle('low', low);
+  $('#timerBarWrap').classList.toggle('low', low);
+  $('#timerBar').style.width = (ms / (game.seconds * 1000) * 100) + '%';
+  if (s !== timer.lastSec){ if (s <= 5 && s > 0 && game.state !== 'countdown'){ beep(1000, 0.06, 'sine', 0.15); } timer.lastSec = s; }
+  if (ms <= 0){ stopTimer(); onTimeUp(); }
+}
+
+/* ==========================================================
+   7. LÓGICA DEL JUEGO
+   ========================================================== */
+const teamNow = () => game.teams[game.phase === 'tiebreak' ? game.tieQueue[game.tieIdx] : game.teamIdx];
+const playersOf = t => `${t.p1} y ${t.p2}`;
+
+function startGame(){
+  const pool = words.filter(w => !settings.excludedCats.includes(w.category));
+  if (!pool.length){ toast('Elige al menos una categoría con palabras.'); return; }
+  game = {
+    teams: settings.pairs.map((p, i) => ({
+      name: p.name.trim() || ('Pareja ' + (i + 1)),
+      p1: p.p1.trim() || 'Jugador 1', p2: p.p2.trim() || 'Jugador 2',
+      score: 0, color: TEAM_COLORS[i % TEAM_COLORS.length]})),
+    seconds: settings.seconds, target: settings.target,
+    pool, deck: shuffle(pool), teamIdx: 0, round: 1,
+    phase: 'normal', tieQueue: [], tieIdx: 0, hadTiebreak: false,
+    log: [], chain: null, state: 'idle', timeUp: false, cdTimers: []
+  };
+  showReady();
+}
+
+function drawWord(){
+  if (!game.deck.length){
+    game.deck = shuffle(game.pool);
+    toast('Ya salieron todas las palabras: se mezclan de nuevo.');
+  }
+  return game.deck.pop();
+}
+
+function scoresHTML(teams, activeTeam, target, medals){
+  const scores = teams.map(t => t.score);
+  return teams.map(t => {
+    const rank = scores.filter(s => s > t.score).length;
+    const medal = medals ? (['🥇 ','🥈 ','🥉 '][rank] || '') : '';
+    const pct = Math.min(100, Math.max(0, t.score / target * 100));
+    return `<div class="score-row${t === activeTeam ? ' active' : ''}" style="--c:${t.color}">
+      <span class="team-dot"></span><span class="sname">${medal}${esc(t.name)}</span><span class="spts">${t.score}</span>
+      <span class="prog"><i style="width:${pct}%"></i></span></div>`;
+  }).join('');
+}
+
+function showReady(){
+  const t = teamNow();
+  $('#roundLabel').textContent = game.phase === 'tiebreak' ? 'Desempate: una cadena por pareja' : `Ronda ${game.round}`;
+  $('#readyTeam').textContent = t.name;
+  $('#readyTeam').style.setProperty('--c', t.color);
+  $('#readyPlayers').textContent = playersOf(t);
+  $('#readyTip').textContent = 'Pongan el celular donde todos lo vean. La otra pareja hace de juez y confirma si de verdad coincidieron.';
+  $('#targetInfo').textContent = `Marcador (gana quien llegue a ${game.target})`;
+  $('#readyScores').innerHTML = scoresHTML(game.teams, t, game.target, false);
+  show('ready');
+}
+
+function startTurn(){
+  unlockAudio(); keepAwake();
+  const t = teamNow();
+  game.log = []; game.timeUp = false; game.chain = null;
+  $('#playTeam').textContent = t.name;
+  $('#playPlayers').textContent = playersOf(t);
+  $('#playDot').style.setProperty('--c', t.color);
+  $('#timeBanner').hidden = true;
+  const tb = game.phase === 'tiebreak';
+  $('#timerBarWrap').hidden = tb;
+  $('#timer').classList.toggle('tb', tb);
+  $('#timer').classList.remove('low');
+  show('play');
+  if (tb) $('#timer').textContent = 'Desempate';
+  else startTimer(game.seconds);
+  renderTurnStats();
+  newChain();
+}
+
+function setDie(n){ $$('#die i').forEach((p, i) => p.classList.toggle('on', FACES[n].includes(i))); }
+
+function setState(s){
+  game.state = s;
+  $('#goBtn').hidden = (s === 'judge');
+  $('#goBtn').disabled = (s !== 'ready');
+  $('#judge').hidden = (s !== 'judge');
+}
+
+function renderChain(){
+  const c = game.chain;
+  $('#triesText').textContent = `${c.attempts} ${plural(c.attempts, 'intento', 'intentos')}`;
+  $('#valueText').textContent = `Vale ${c.value} ${plural(c.value, 'punto', 'puntos')}`;
+  $('#dots').innerHTML = Array.from({length:c.attempts}, (_, i) => `<i class="${i < c.misses ? 'used' : ''}"></i>`).join('');
+}
+
+async function newChain(){
+  const word = drawWord();
+  const n = 1 + Math.floor(Math.random() * 6);
+  game.chain = {word: word.word, src: word, die: n, attempts: n, value: pointsFor(n), misses: 0};
+  setState('rolling');
+  $('#venn').classList.remove('merge');
+  $('#chainWord').textContent = '…';
+  $('#triesText').textContent = 'Tirando…'; $('#valueText').textContent = ''; $('#dots').innerHTML = '';
+  $('#chainHint').textContent = '';
+  const die = $('#die'); die.classList.add('rolling');
+  for (let i = 0; i < 8; i++){
+    setDie(1 + Math.floor(Math.random() * 6)); beep(300 + Math.random() * 300, 0.03, 'square', 0.06);
+    await sleep(80);
+    if (!game || game.state !== 'rolling') return;      // se terminó el turno mientras rodaba
+  }
+  die.classList.remove('rolling'); setDie(n);
+  $('#chainWord').textContent = game.chain.word;
+  $('#chainHint').textContent = 'Digan al mismo tiempo una palabra relacionada (sin decir esta).';
+  renderChain();
+  setState('ready');
+}
+
+function clearCountdown(){ game.cdTimers.forEach(clearTimeout); game.cdTimers = []; $('#countdown').hidden = true; }
+
+function runCountdown(){
+  if (!game || game.state !== 'ready') return;
+  unlockAudio(); setState('countdown');
+  const box = $('#countdown'), num = $('#cdNum');
+  const steps = [['3', 660], ['2', 660], ['1', 660], ['¡Ya!', 990]];
+  box.hidden = false;
+  steps.forEach(([label, f], i) => {
+    game.cdTimers.push(setTimeout(() => {
+      num.textContent = label; num.classList.toggle('go', i === 3);
+      num.style.animation = 'none'; void num.offsetWidth; num.style.animation = '';
+      beep(f, i === 3 ? 0.3 : 0.12, 'triangle', 0.3); vibrate(i === 3 ? 120 : 30);
+    }, i * 700));
+  });
+  game.cdTimers.push(setTimeout(() => { box.hidden = true; game.cdTimers = []; $('#chainHint').textContent = '¿Dijeron la misma palabra? La otra pareja confirma.'; setState('judge'); }, 3 * 700 + 650));
+}
+
+function flash(color){ const f = $('#flash'); f.style.background = color; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+
+function renderTurnStats(){
+  const won = game.log.filter(l => l.res === 'ok').length, lost = game.log.filter(l => l.res === 'lost').length;
+  $('#turnStats').innerHTML = `<span>Puntos: <strong>${turnPoints()}</strong></span><span>Ganadas: <strong>${won}</strong></span><span>Perdidas: <strong>${lost}</strong></span>`;
+}
+const turnPoints = () => game.log.filter(l => l.res === 'ok').reduce((s, l) => s + l.value, 0);
+
+function recordChain(res){
+  const c = game.chain;
+  game.log.push({word: c.word, die: c.die, value: c.value, res});
+  game.chain = null;
+  renderTurnStats();
+}
+
+async function afterChain(){
+  setState('between');
+  await sleep(900);
+  if (!game || current !== 'play') return;
+  if (game.timeUp || game.phase === 'tiebreak') finishTurn();
+  else newChain();
+}
+
+function hit(){
+  if (!game || game.state !== 'judge') return;
+  recordChain('ok');
+  $('#venn').classList.add('merge');
+  flash('var(--ok)'); vibrate([40, 40, 80]);
+  [660, 880, 1320].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle'), i * 90));
+  $('#chainHint').textContent = `¡En la misma onda! +${game.log[game.log.length - 1].value}`;
+  afterChain();
+}
+
+function miss(){
+  if (!game || game.state !== 'judge') return;
+  const c = game.chain;
+  c.misses++;
+  renderChain();
+  flash('var(--bad)'); beep(160, 0.3, 'square', 0.15); vibrate(80);
+  if (c.misses >= c.attempts){
+    recordChain('lost');
+    $('#chainHint').textContent = 'Se acabaron los intentos. ¡A la siguiente!';
+    afterChain();
+  } else if (game.timeUp){
+    recordChain('cut');
+    finishTurn();
+  } else {
+    $('#chainHint').textContent = 'Ahora busquen una palabra que conecte las dos que acaban de decir.';
+    setState('ready');
+  }
+}
+
+function onTimeUp(){
+  game.timeUp = true;
+  beep(330, 0.6, 'triangle', 0.3); vibrate([200, 80, 200]);
+  if (game.state === 'countdown' || game.state === 'judge'){ $('#timeBanner').hidden = false; }
+  else if (game.state !== 'between') finishTurn();
+}
+
+function finishTurn(){
+  stopTimer(); clearCountdown(); releaseAwake();
+  $('#pauseModal').hidden = true; $('#timeBanner').hidden = true;
+  const c = game.chain;
+  if (c){
+    if (c.misses > 0) recordChain('cut');
+    else { game.deck.unshift(c.src); game.chain = null; }   // no se jugó: vuelve al mazo
+  }
+  setState('over');
+  renderTurnEnd(); show('turnEnd');
+}
+
+const RES = {
+  ok:   {icon:'✓', cls:'ok',   label: l => `+${l.value}`},
+  lost: {icon:'✗', cls:'lost', label: () => 'Perdida'},
+  cut:  {icon:'…', cls:'cut',  label: () => 'Sin terminar'}
+};
+
+function renderTurnEnd(){
+  const t = teamNow(), pts = turnPoints();
+  $('#teTitle').textContent = game.phase === 'tiebreak' ? 'Desempate' : (game.timeUp ? '¡Tiempo!' : 'Fin del turno');
+  $('#teTeam').textContent = t.name;
+  $('#teTeam').style.setProperty('--c', t.color);
+  $('#tePoints').textContent = `${pts > 0 ? '+' : ''}${pts} ${plural(pts, 'punto', 'puntos')}`;
+  $('#teLog').innerHTML = game.log.length
+    ? game.log.map((l, i) => `<button class="log-item ${RES[l.res].cls}" data-action="cycleLog" data-i="${i}">
+        <span class="log-ico">${RES[l.res].icon}</span>
+        <span class="log-word">${esc(l.word)}<small>Dado: ${l.die} (vale ${l.value})</small></span>
+        <span class="log-res">${RES[l.res].label(l)}</span></button>`).join('')
+    : '<p class="empty">No se jugó ninguna cadena en este turno.</p>';
+}
+
+function confirmTurn(){
+  teamNow().score += turnPoints();
+  game.log = [];
+  const top = () => Math.max(...game.teams.map(t => t.score));
+  if (game.phase === 'normal'){
+    game.teamIdx++;
+    if (game.teamIdx < game.teams.length){ showReady(); return; }
+    game.teamIdx = 0; game.round++;
+    if (top() < game.target){ showReady(); return; }
+    const leaders = game.teams.map((t, i) => i).filter(i => game.teams[i].score === top());
+    if (leaders.length === 1){ showFinal(); return; }
+    game.phase = 'tiebreak'; game.hadTiebreak = true; game.tieQueue = leaders; game.tieIdx = 0;
+    toast('¡Empate! Cada pareja empatada juega una cadena extra.');
+    showReady();
+  } else {
+    game.tieIdx++;
+    if (game.tieIdx < game.tieQueue.length){ showReady(); return; }
+    const best = Math.max(...game.tieQueue.map(i => game.teams[i].score));
+    const leaders = game.tieQueue.filter(i => game.teams[i].score === best);
+    if (leaders.length === 1){ showFinal(); return; }
+    game.tieQueue = leaders; game.tieIdx = 0;
+    toast('Siguen empatados: otra cadena extra.');
+    showReady();
+  }
+}
+
+function showFinal(){
+  const sorted = [...game.teams].sort((a, b) => b.score - a.score);
+  const w = sorted[0];
+  $('#winner').textContent = '¡Gana ' + w.name + '!';
+  $('#winner').style.setProperty('--c', w.color);
+  $('#winnerPlayers').textContent = playersOf(w);
+  $('#finalNote').textContent = game.hadTiebreak ? 'Ganaron en el desempate.' : '';
+  $('#finalScores').innerHTML = scoresHTML(sorted, null, game.target, true);
+  show('final');
+  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'triangle'), i * 140));
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && current === 'play' && game && game.state !== 'over') actions.pause();
+});
+
+/* ==========================================================
+   8. INICIO Y CONFIGURACIÓN
+   ========================================================== */
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+function renderHome(){
+  $('#homeCount').textContent = words.length;
+  const hint = $('#installHint');
+  if (!isStandalone()){
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    hint.textContent = ios
+      ? 'Para instalarla en tu iPhone: botón Compartir y luego “Añadir a pantalla de inicio”.'
+      : 'Para instalarla: menú ⋮ del navegador y luego “Instalar app” o “Añadir a pantalla de inicio”.';
+    hint.hidden = false;
+  } else hint.hidden = true;
+}
+
+function renderSetup(){
+  $('#pairs').innerHTML = settings.pairs.map((p, i) => `
+    <div class="team-block">
+      <div class="team-row">
+        <span class="team-dot" style="--c:${TEAM_COLORS[i % TEAM_COLORS.length]}"></span>
+        <input class="input" value="${esc(p.name)}" data-pair="${i}" data-field="name" maxlength="24" aria-label="Nombre de la pareja ${i + 1}">
+        ${settings.pairs.length > 2 ? `<button class="icon-btn" data-action="removePair" data-i="${i}" aria-label="Quitar pareja">✕</button>` : ''}
+      </div>
+      <div class="grid2">
+        <input class="input" value="${esc(p.p1)}" data-pair="${i}" data-field="p1" maxlength="20" placeholder="Jugador 1" autocomplete="off" aria-label="Jugador 1 de la pareja ${i + 1}">
+        <input class="input" value="${esc(p.p2)}" data-pair="${i}" data-field="p2" maxlength="20" placeholder="Jugador 2" autocomplete="off" aria-label="Jugador 2 de la pareja ${i + 1}">
+      </div>
+    </div>`).join('');
+  $('#addPairBtn').hidden = settings.pairs.length >= 6;
+  $('#v-seconds').textContent = fmtTime(settings.seconds);
+  $('#v-target').textContent = settings.target;
+  $('#soundToggle').checked = !!settings.sound;
+  const cats = categoryCounts();
+  $('#catChips').innerHTML = cats.length
+    ? cats.map(([cat, n]) => {
+        const on = !settings.excludedCats.includes(cat);
+        return `<button class="chip${on ? ' on' : ''}" data-action="toggleCat" data-cat="${esc(cat)}" aria-pressed="${on}">${esc(cat)} <span>${n}</span></button>`;
+      }).join('')
+    : '<p class="hint">Todavía no tienes palabras. Créalas en “Mis palabras”.</p>';
+  const pool = words.filter(w => !settings.excludedCats.includes(w.category)).length;
+  $('#poolInfo').textContent = `(${pool} ${plural(pool, 'palabra', 'palabras')})`;
+}
+
+/* ==========================================================
+   9. MIS PALABRAS
+   ========================================================== */
+function renderWords(){
+  const cats = categoryCounts();
+  if (filterCat && !cats.some(([c]) => c === filterCat)) filterCat = '';
+  $('#catFilter').innerHTML = `<option value="">Todas (${words.length})</option>` +
+    cats.map(([c, n]) => `<option value="${esc(c)}"${c === filterCat ? ' selected' : ''}>${esc(c)} (${n})</option>`).join('');
+  const q = norm(search);
+  const list = words.filter(w => (!filterCat || w.category === filterCat) && (!q || norm(w.word).includes(q)))
+                    .sort((a, b) => a.word.localeCompare(b.word, 'es'));
+  $('#wordsCount').textContent = `${list.length} ${plural(list.length, 'palabra', 'palabras')}`;
+  $('#wordList').innerHTML = list.length
+    ? list.map(w => `<button class="word-item" data-action="editWord" data-id="${esc(w.id)}"><strong>${esc(w.word)}</strong><span>${esc(w.category)}</span></button>`).join('')
+    : `<div class="empty">${words.length ? 'Ninguna palabra coincide con la búsqueda.' : 'No tienes palabras. Toca “Nueva” para crear la primera.'}</div>`;
+  $('#fromTabuBtn').hidden = !Array.isArray(store.get(KEYS.tabu, null));
+}
+
+function openEditor(id){
+  editingId = id || null;
+  const w = id ? words.find(x => x.id === id) : null;
+  $('#editTitle').textContent = w ? 'Editar palabra' : 'Nueva palabra';
+  $('#fWord').value = w ? w.word : '';
+  $('#fCat').value = w ? w.category : (filterCat || '');
+  $('#catList').innerHTML = categoryCounts().map(([c]) => `<option value="${esc(c)}"></option>`).join('');
+  $('#deleteBtn').hidden = !w;
+  show('edit');
+  if (!w) setTimeout(() => $('#fWord').focus(), 50);
+}
+
+function saveWord(){
+  const word = $('#fWord').value.trim();
+  if (!word){ toast('Escribe la palabra de inicio.'); $('#fWord').focus(); return; }
+  const category = $('#fCat').value.trim() || 'General';
+  if (words.some(w => w.id !== editingId && keyOf(w) === norm(word))){ toast(`Ya tienes la palabra “${word}”.`); return; }
+  if (editingId) Object.assign(words.find(x => x.id === editingId), {word, category});
+  else words.push({id: uid(), word, category});
+  saveWords(); toast('Palabra guardada'); actions.goWords();
+}
+
+async function deleteWord(){
+  const w = words.find(x => x.id === editingId);
+  if (!w) return;
+  const ok = await ask(`¿Eliminar la palabra “${w.word}”?`, [{label:'Eliminar', value:true, style:'danger'}, {label:'Cancelar', value:false}]);
+  if (!ok) return;
+  words = words.filter(x => x.id !== editingId); saveWords(); toast('Palabra eliminada'); actions.goWords();
+}
+
+function mergeWords(incoming){
+  const have = new Set(words.map(keyOf));
+  const added = incoming.filter(w => !have.has(keyOf(w)) && have.add(keyOf(w)));
+  words = words.concat(added); saveWords(); renderWords();
+  return added.length;
+}
+
+async function exportWords(){
+  const list = filterCat ? words.filter(w => w.category === filterCat) : words;
+  if (!list.length){ toast('No hay palabras para exportar.'); return; }
+  const json = JSON.stringify({app:'misma-onda', version:1, exported:new Date().toISOString(),
+    words: list.map(({word, category}) => ({word, category}))}, null, 2);
+  const slug = filterCat ? '-' + norm(filterCat).replace(/[^a-z0-9]+/g, '-') : '';
+  const name = `misma-onda-palabras${slug}-${new Date().toISOString().slice(0, 10)}.json`;
+  let file = null; try { file = new File([json], name, {type:'application/json'}); } catch(e){}
+  if (file && navigator.canShare && navigator.canShare({files:[file]})){
+    try { await navigator.share({files:[file], title:'Palabras de En la misma onda'}); return; }
+    catch(e){ if (e && e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(file || new Blob([json], {type:'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast(`Exportadas ${list.length} ${plural(list.length, 'palabra', 'palabras')}`);
+}
+
+async function importText(text){
+  let data; try { data = JSON.parse(text); } catch(e){ toast('El archivo no es un .json válido.'); return; }
+  // Acepta: archivo de esta app ({words}), archivo de Tabú ({cards}) o una lista simple
+  const arr = Array.isArray(data) ? data : (data && (Array.isArray(data.words) ? data.words : Array.isArray(data.cards) ? data.cards : null));
+  if (!arr){ toast('El archivo no contiene palabras.'); return; }
+  const incoming = arr.map(w => sanitizeWord(w)).filter(Boolean);
+  if (!incoming.length){ toast('No se encontraron palabras válidas.'); return; }
+  const n = incoming.length;
+  const choice = await ask(`El archivo tiene ${n} ${plural(n, 'palabra', 'palabras')}. ¿Qué quieres hacer?`, [
+    {label:'Añadirlas a las mías', value:'merge', style:'accent'},
+    {label:'Reemplazar todas mis palabras', value:'replace', style:'danger'},
+    {label:'Cancelar', value:null}]);
+  if (!choice) return;
+  if (choice === 'replace'){ words = incoming; saveWords(); renderWords(); toast(`Ahora tienes ${n} ${plural(n, 'palabra', 'palabras')}`); }
+  else { const a = mergeWords(incoming); toast(`Añadidas ${a}` + (n - a ? ` (${n - a} ya las tenías)` : '')); }
+}
+
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { importText(await f.text()); } catch(err){ toast('No se pudo leer el archivo.'); }
+});
+
+/* ==========================================================
+   10. ACCIONES DE LOS BOTONES
+   ========================================================== */
+const actions = {
+  goHome(){ renderHome(); show('home'); },
+  goSetup(){ renderSetup(); show('setup'); },
+  goWords(){ renderWords(); show('words'); },
+  goHelp(){ show('help'); },
+  addPair(){
+    if (settings.pairs.length >= 6) return;
+    settings.pairs.push({name:'Pareja ' + (settings.pairs.length + 1), p1:'', p2:''}); saveSettings(); renderSetup();
+  },
+  removePair(b){ if (settings.pairs.length <= 2) return; settings.pairs.splice(+b.dataset.i, 1); saveSettings(); renderSetup(); },
+  step(b){
+    const f = b.dataset.field, [lo, hi] = LIMITS[f];
+    settings[f] = Math.min(hi, Math.max(lo, settings[f] + Number(b.dataset.d))); saveSettings(); renderSetup();
+  },
+  toggleCat(b){
+    const cat = b.dataset.cat, i = settings.excludedCats.indexOf(cat);
+    if (i >= 0) settings.excludedCats.splice(i, 1); else settings.excludedCats.push(cat);
+    saveSettings(); renderSetup();
+  },
+  startGame, startTurn, confirmTurn, hit, miss,
+  rematch(){ startGame(); },
+  countdown(){ runCountdown(); },
+  pause(){
+    if (!game || current !== 'play' || game.state === 'over') return;
+    if (game.state === 'countdown'){ clearCountdown(); setState('ready'); }
+    pauseTimer(); releaseAwake();
+    $('#pauseTime').textContent = game.phase === 'tiebreak' ? 'Desempate en pausa' : ('Quedan ' + fmtTime(Math.ceil(timer.remaining / 1000)));
+    $('#pauseModal').hidden = false;
+  },
+  resume(){
+    $('#pauseModal').hidden = true; unlockAudio(); keepAwake();
+    if (game.phase !== 'tiebreak' && !game.timeUp) resumeTimer();
+  },
+  endTurnNow(){ finishTurn(); },
+  cycleLog(b){
+    const l = game.log[+b.dataset.i];
+    l.res = l.res === 'ok' ? 'lost' : 'ok';
+    renderTurnEnd();
+  },
+  async quitGame(){
+    const ok = await ask('¿Abandonar la partida? Se perderá el marcador.',
+      [{label:'Abandonar', value:true, style:'danger'}, {label:'Seguir jugando', value:false}]);
+    if (!ok) return;
+    stopTimer(); if (game) clearCountdown(); releaseAwake();
+    $('#pauseModal').hidden = true; game = null; actions.goHome();
+  },
+  newWord(){ openEditor(null); },
+  editWord(b){ openEditor(b.dataset.id); },
+  saveWord, deleteWord, exportWords,
+  importWords(){ $('#importFile').click(); },
+  fromTabu(){
+    const cards = store.get(KEYS.tabu, []);
+    const a = mergeWords((Array.isArray(cards) ? cards : []).map(c => sanitizeWord(c)).filter(Boolean));
+    toast(a ? `Añadidas ${a} ${plural(a, 'palabra', 'palabras')} de tu Tabú` : 'Ya tenías todas las palabras de tu Tabú.');
+  },
+  restoreExamples(){
+    const a = mergeWords(EXAMPLES.map(w => sanitizeWord(w)));
+    toast(a ? `Recuperadas ${a} ${plural(a, 'palabra', 'palabras')}` : 'Ya tienes todas las palabras de ejemplo.');
+  },
+  async install(){
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch(e){}
+    deferredPrompt = null; $('#installBtn').hidden = true;
+  }
+};
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]');
+  if (!b || b.disabled) return;
+  const fn = actions[b.dataset.action];
+  if (fn) fn(b, e);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.pair !== undefined){ settings.pairs[+t.dataset.pair][t.dataset.field] = t.value; saveSettings(); }
+  else if (t.id === 'search'){ search = t.value; renderWords(); }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'catFilter'){ filterCat = e.target.value; renderWords(); }
+  else if (e.target.id === 'soundToggle'){ settings.sound = e.target.checked; saveSettings(); if (settings.sound){ unlockAudio(); beep(880, 0.1); } }
+});
+
+/* ==========================================================
+   11. INSTALACIÓN COMO APP Y MODO SIN CONEXIÓN
+   ========================================================== */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('#installBtn').hidden = false; });
+window.addEventListener('appinstalled', () => { $('#installBtn').hidden = true; renderHome(); });
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch(e){}
+
+setDie(5);
+renderHome();
+</script>
+</body>
+</html>
